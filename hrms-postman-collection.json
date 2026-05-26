@@ -1,0 +1,267 @@
+{
+	"info": {
+		"_postman_id": "hrms-attendance-overtime-api",
+		"name": "HRMS - Attendance & Overtime API",
+		"description": "Complete API collection for the HRMS Worker Attendance & Overtime Settlement Engine.\n\nBase URL: http://localhost:8080\n\nWorkflow:\n1. Create a Worker\n2. Create a Site\n3. Clock In the worker at the site\n4. Clock Out the worker (auto-calculates overtime)\n5. Check Active Workers (from Redis)\n6. View Attendance Log (paginated)\n7. View Overtime Summary\n8. Settle Overtime for a past month",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Workers",
+			"item": [
+				{
+					"name": "Create Worker",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Ravi Kumar\",\n    \"phone\": \"9876543210\",\n    \"designation\": \"MASON\",\n    \"dailyWageRate\": 800,\n    \"active\": true\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/workers",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "workers"]
+						},
+						"description": "Create a new construction worker. Designation values: MASON, ELECTRICIAN, PLUMBER, SUPERVISOR, HELPER. dailyWageRate is in INR using BigDecimal."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Workers",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/workers",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "workers"]
+						},
+						"description": "List all registered workers."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Sites",
+			"item": [
+				{
+					"name": "Create Site",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"siteName\": \"Greenfield Phase 1\",\n    \"location\": \"Whitefield Bengaluru\",\n    \"active\": true\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/sites",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "sites"]
+						},
+						"description": "Create a new construction site. Site names must be unique."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Sites",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/sites",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "sites"]
+						},
+						"description": "List all construction sites."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Attendance",
+			"item": [
+				{
+					"name": "Clock In",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"workerId\": 1,\n    \"siteId\": 1\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/attendance/clock-in",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "attendance", "clock-in"]
+						},
+						"description": "Log a worker's arrival at a site. Rules: Worker must be active, site must be active, no double clock-in allowed. Worker is added to Redis active workers cache."
+					},
+					"response": []
+				},
+				{
+					"name": "Clock Out",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"workerId\": 1\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/attendance/clock-out",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "attendance", "clock-out"]
+						},
+						"description": "Log a worker's departure. System auto-calculates:\n- Total hours worked\n- Overtime hours (anything > 8h standard shift)\n- Overtime amount (1.5x first 2 OT hours, 2x beyond)\n- Flags shift if > 16 hours\n- Enforces 60h monthly overtime cap\n- Removes worker from Redis active cache"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Active Workers (Redis)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/attendance/active",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "attendance", "active"]
+						},
+						"description": "List all workers currently clocked in across all sites. Served from Redis (HGETALL), not the database. Returns empty list if Redis is unavailable (graceful degradation)."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Attendance Log (Paginated)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/attendance/log?workerId=1&from=2026-01-01&to=2026-12-31&page=0&size=20",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "attendance", "log"],
+							"query": [
+								{
+									"key": "workerId",
+									"value": "1",
+									"description": "Filter by worker ID (optional)"
+								},
+								{
+									"key": "from",
+									"value": "2026-01-01",
+									"description": "Start date YYYY-MM-DD (optional)"
+								},
+								{
+									"key": "to",
+									"value": "2026-12-31",
+									"description": "End date YYYY-MM-DD (optional)"
+								},
+								{
+									"key": "page",
+									"value": "0",
+									"description": "Page number (0-indexed)"
+								},
+								{
+									"key": "size",
+									"value": "20",
+									"description": "Page size (max 100)"
+								}
+							]
+						},
+						"description": "Paginated attendance history. Uses JOIN FETCH to eliminate N+1 queries (Ticket LF-203 fix). All parameters are optional."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Overtime",
+			"item": [
+				{
+					"name": "Get Overtime Summary",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/overtime/summary/1?month=2026-05",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "overtime", "summary", "1"],
+							"query": [
+								{
+									"key": "month",
+									"value": "2026-05",
+									"description": "Month in YYYY-MM format"
+								}
+							]
+						},
+						"description": "Monthly overtime summary for a worker. Shows total OT hours, total payout, settlement status, and day-by-day breakdown. External API call happens OUTSIDE transaction (Ticket LF-205 fix)."
+					},
+					"response": []
+				},
+				{
+					"name": "Settle Overtime",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/overtime/settle/1?month=2026-04",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "overtime", "settle", "1"],
+							"query": [
+								{
+									"key": "month",
+									"value": "2026-04",
+									"description": "Month to settle in YYYY-MM format (must be a past month)"
+								}
+							]
+						},
+						"description": "Settle all pending overtime entries for a worker in a specific month. Rules:\n- Cannot settle current month\n- Cannot settle future months\n- Already-settled entries return 409 Conflict\n- ALL entries settle atomically (one transaction)\n- SMS notification fires ONLY after DB commit (Ticket LF-204 fix)"
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

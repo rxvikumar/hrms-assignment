@@ -1,0 +1,18 @@
+package net.guides.springboot2.crud.exception;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ResponseStatus;
+
+/**
+ * Exception thrown when a requested resource is not found.
+ * Used by the existing EmployeeController (kept as-is).
+ */
+@ResponseStatus(value = HttpStatus.NOT_FOUND)
+public class ResourceNotFoundException extends Exception {
+
+    private static final long serialVersionUID = 1L;
+
+    public ResourceNotFoundException(String message) {
+        super(message);
+    }
+}
