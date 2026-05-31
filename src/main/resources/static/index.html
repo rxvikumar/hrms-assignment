@@ -1,0 +1,1957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HRMS Attendance & Overtime Settlement Engine</title>
+    <meta name="description" content="Premium dashboard for Worker Attendance and Overtime Settlement with real-time analytics.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg-base: #080c14;
+            --bg-surface: #0f1626;
+            --bg-surface-elevated: #162035;
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.15);
+            --primary-hover: #4f46e5;
+            --accent-cyan: #06b6d4;
+            --accent-purple: #a855f7;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-amber: #f59e0b;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --text-dark: #6b7280;
+            --border: rgba(255, 255, 255, 0.08);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 18px;
+            --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+            --font-main: 'Outfit', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            font-family: var(--font-main);
+            min-height: 100vh;
+            display: flex;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.05) 0%, transparent 40%);
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-base);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-surface-elevated);
+            border-radius: var(--radius-sm);
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+        }
+
+        /* Layout */
+        aside {
+            width: 280px;
+            background-color: var(--bg-surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+        }
+
+        main {
+            margin-left: 280px;
+            flex: 1;
+            padding: 40px;
+            max-width: 1400px;
+            position: relative;
+        }
+
+        /* Sidebar Logo */
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 40px;
+        }
+        .logo-icon {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent-purple) 100%);
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+        }
+        .logo-icon i {
+            color: #fff;
+            font-size: 20px;
+        }
+        .logo-text h1 {
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            background: linear-gradient(to right, #ffffff, #c7d2fe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .logo-text p {
+            font-size: 11px;
+            color: var(--accent-cyan);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Navigation */
+        nav {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            color: var(--text-muted);
+            text-decoration: none;
+            border-radius: var(--radius-md);
+            font-weight: 500;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+        .nav-item:hover {
+            color: var(--text-main);
+            background-color: rgba(255, 255, 255, 0.03);
+            transform: translateX(4px);
+        }
+        .nav-item.active {
+            color: #ffffff;
+            background-color: var(--primary-glow);
+            border-color: rgba(99, 102, 241, 0.2);
+            box-shadow: inset 0 0 12px rgba(99, 102, 241, 0.05);
+        }
+        .nav-item.active i {
+            color: var(--primary);
+        }
+        .nav-item i {
+            font-size: 18px;
+            transition: color 0.2s;
+        }
+
+        /* Connection / System Status Indicator */
+        .status-widget {
+            margin-top: auto;
+            background-color: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 14px;
+        }
+        .status-line {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 8px currentColor;
+        }
+        .status-dot.online {
+            background-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+        .status-dot.offline {
+            background-color: var(--accent-red);
+            color: var(--accent-red);
+        }
+        .status-desc {
+            font-size: 11px;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        /* Main Content Headers */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+        .header-title h2 {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        .header-title p {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-top: 4px;
+        }
+
+        /* Top Action Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background-color: var(--primary);
+            color: #ffffff;
+            border: none;
+            padding: 10px 18px;
+            border-radius: var(--radius-md);
+            font-family: var(--font-main);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+        .btn:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+        }
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            box-shadow: none;
+        }
+        .btn-outline:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-color: var(--text-muted);
+            box-shadow: none;
+            transform: translateY(-1px);
+        }
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--accent-purple) 0%, #7c3aed 100%);
+            box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
+        }
+        .btn-secondary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(168, 85, 247, 0.4);
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        /* Metric Cards Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+        .metric-card {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .metric-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(99, 102, 241, 0.2);
+            box-shadow: var(--shadow-lg), 0 0 20px rgba(99, 102, 241, 0.03);
+        }
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(to right, transparent, transparent);
+            transition: all 0.3s;
+        }
+        .metric-card.purple::before { background: linear-gradient(to right, var(--primary), var(--accent-purple)); }
+        .metric-card.cyan::before { background: linear-gradient(to right, var(--accent-cyan), var(--primary)); }
+        .metric-card.green::before { background: linear-gradient(to right, var(--accent-green), var(--accent-cyan)); }
+        .metric-card.amber::before { background: linear-gradient(to right, var(--accent-amber), var(--accent-red)); }
+
+        .metric-details p {
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .metric-details h3 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-top: 6px;
+            letter-spacing: -1px;
+            font-family: var(--font-main);
+        }
+        .metric-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+        .metric-card.purple .metric-icon { background-color: rgba(99, 102, 241, 0.1); color: var(--primary); }
+        .metric-card.cyan .metric-icon { background-color: rgba(6, 182, 212, 0.1); color: var(--accent-cyan); }
+        .metric-card.green .metric-icon { background-color: rgba(16, 185, 129, 0.1); color: var(--accent-green); }
+        .metric-card.amber .metric-icon { background-color: rgba(245, 158, 11, 0.1); color: var(--accent-amber); }
+
+        /* General UI Containers */
+        .content-panel {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 28px;
+            margin-bottom: 32px;
+            box-shadow: var(--shadow-md);
+            position: relative;
+        }
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        .panel-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .panel-header h3 i {
+            color: var(--primary);
+        }
+
+        /* Beautiful Responsive Grid */
+        .dashboard-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+        }
+
+        /* Tables & Lists */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+        thead {
+            border-bottom: 1px solid var(--border);
+        }
+        th {
+            padding: 14px 16px;
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+        tbody tr {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            transition: background-color 0.2s;
+        }
+        tbody tr:hover {
+            background-color: rgba(255, 255, 255, 0.015);
+        }
+        tbody tr:last-child {
+            border-bottom: none;
+        }
+        td {
+            padding: 16px;
+            font-size: 14px;
+            color: var(--text-main);
+            vertical-align: middle;
+        }
+        
+        /* Form inputs & designs */
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+        .form-control {
+            width: 100%;
+            background-color: var(--bg-base);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            font-family: var(--font-main);
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        }
+        select.form-control {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            background-size: 16px;
+            padding-right: 40px;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-success { background-color: rgba(16, 185, 129, 0.1); color: var(--accent-green); }
+        .badge-danger { background-color: rgba(239, 68, 68, 0.1); color: var(--accent-red); }
+        .badge-warning { background-color: rgba(245, 158, 11, 0.1); color: var(--accent-amber); }
+        .badge-info { background-color: rgba(6, 182, 212, 0.1); color: var(--accent-cyan); }
+        .badge-secondary { background-color: rgba(255, 255, 255, 0.05); color: var(--text-muted); }
+
+        /* Dynamic Status Indicator in Dashboard */
+        .active-worker-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            background-color: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            margin-bottom: 12px;
+            transition: all 0.2s;
+        }
+        .active-worker-item:hover {
+            border-color: rgba(99, 102, 241, 0.2);
+            transform: translateX(4px);
+            background-color: rgba(255, 255, 255, 0.03);
+        }
+        .active-worker-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .active-worker-avatar {
+            width: 38px;
+            height: 38px;
+            background-color: var(--primary-glow);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 14px;
+        }
+        .active-worker-meta h4 {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .active-worker-meta p {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* Glassmorphism Modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(8, 12, 20, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            width: 100%;
+            max-width: 500px;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            transform: translateY(20px);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .modal-overlay.open .modal {
+            transform: translateY(0);
+        }
+        .modal-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 20px;
+            transition: color 0.2s;
+        }
+        .modal-close:hover {
+            color: var(--text-main);
+        }
+        .modal-body {
+            padding: 24px;
+        }
+        .modal-footer {
+            padding: 16px 24px;
+            background-color: rgba(0, 0, 0, 0.15);
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        /* Toast system */
+        .toast-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 2000;
+        }
+        .toast {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--primary);
+            padding: 16px 20px;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 320px;
+            max-width: 450px;
+            animation: slideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: all 0.3s;
+        }
+        .toast.success { border-left-color: var(--accent-green); }
+        .toast.error { border-left-color: var(--accent-red); }
+        .toast.warning { border-left-color: var(--accent-amber); }
+        .toast-content {
+            flex: 1;
+        }
+        .toast-title {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+        .toast-message {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+        .toast-close {
+            background: none;
+            border: none;
+            color: var(--text-dark);
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .toast-close:hover {
+            color: var(--text-main);
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Helper styles for specific sections */
+        .page {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+        .page.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Mono typography for tables/costs */
+        .cost-val {
+            font-family: var(--font-mono);
+            font-weight: 600;
+            letter-spacing: -0.2px;
+        }
+        .text-mono {
+            font-family: var(--font-mono);
+        }
+
+        /* Setup / Welcome Hero on Dashboard */
+        .dashboard-hero {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
+            border: 1px solid rgba(99, 102, 241, 0.15);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            margin-bottom: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-graphics {
+            position: absolute;
+            right: -20px;
+            bottom: -20px;
+            opacity: 0.08;
+            font-size: 200px;
+            color: var(--text-main);
+            pointer-events: none;
+        }
+        .hero-text h3 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(to right, #fff, #c7d2fe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .hero-text p {
+            color: var(--text-muted);
+            font-size: 14px;
+            max-width: 600px;
+            line-height: 1.6;
+        }
+
+        /* Overtime and payroll styles */
+        .payroll-selector-bar {
+            display: flex;
+            gap: 16px;
+            align-items: flex-end;
+            margin-bottom: 28px;
+        }
+        .payroll-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-top: 24px;
+        }
+        .payroll-card {
+            background-color: rgba(255, 255, 255, 0.015);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 20px;
+        }
+        .payroll-card h4 {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .payroll-card h4 i {
+            color: var(--accent-cyan);
+        }
+        .payroll-stat {
+            font-size: 28px;
+            font-weight: 700;
+            font-family: var(--font-mono);
+            color: var(--text-main);
+        }
+
+        /* Logs page filter bar */
+        .filter-bar {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr auto;
+            gap: 16px;
+            align-items: flex-end;
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: var(--radius-md);
+            margin-bottom: 24px;
+        }
+        .pagination-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- SIDEBAR -->
+    <aside>
+        <div class="logo-container">
+            <div class="logo-icon">
+                <i data-lucide="clock"></i>
+            </div>
+            <div class="logo-text">
+                <h1>HRMS Engine</h1>
+                <p>Settlement Portal</p>
+            </div>
+        </div>
+
+        <nav>
+            <a class="nav-item active" onclick="switchTab('dashboard')">
+                <i data-lucide="layout-dashboard"></i>
+                Dashboard
+            </a>
+            <a class="nav-item" onclick="switchTab('workers')">
+                <i data-lucide="users"></i>
+                Workers Grid
+            </a>
+            <a class="nav-item" onclick="switchTab('sites')">
+                <i data-lucide="building-2"></i>
+                Construction Sites
+            </a>
+            <a class="nav-item" onclick="switchTab('attendance-desk')">
+                <i data-lucide="clipboard-signature"></i>
+                Attendance Desk
+            </a>
+            <a class="nav-item" onclick="switchTab('overtime-payroll')">
+                <i data-lucide="banknote"></i>
+                Overtime & Payroll
+            </a>
+            <a class="nav-item" onclick="switchTab('logs')">
+                <i data-lucide="list-todo"></i>
+                Attendance Logs
+            </a>
+        </nav>
+
+        <!-- SYSTEM STATUS WIDGET -->
+        <div class="status-widget">
+            <div class="status-line">
+                <span class="status-dot online" id="redisStatusDot"></span>
+                <span>System Server</span>
+            </div>
+            <p class="status-desc" id="systemStatusDesc">Backend fully connected to PostgreSQL (Supabase) + Redis Cache layer.</p>
+        </div>
+    </aside>
+
+    <!-- MAIN WORKSPACE -->
+    <main>
+
+        <!-- ==================== DASHBOARD PAGE ==================== -->
+        <section id="dashboard" class="page active">
+            <header>
+                <div class="header-title">
+                    <h2>Overview Dashboard</h2>
+                    <p>Live stats and active attendance engine tracker.</p>
+                </div>
+                <div>
+                    <button class="btn btn-secondary" onclick="switchTab('attendance-desk')">
+                        <i data-lucide="clipboard-signature"></i>
+                        Simulate Clock In/Out
+                    </button>
+                </div>
+            </header>
+
+            <div class="dashboard-hero">
+                <i class="hero-graphics" data-lucide="shield-check"></i>
+                <div class="hero-text">
+                    <h3>HRMS Assignment - Worker Attendance & Overtime Settlement Engine</h3>
+                    <p>Welcome to the premium admin management panel. This interface provides direct oversight of the business rules including the 60-hour weekly cap protection, database transaction pooler tuning, and post-commit transactional event-driven SMS alerts.</p>
+                </div>
+            </div>
+
+            <!-- Metrics Grid -->
+            <div class="metrics-grid">
+                <div class="metric-card purple">
+                    <div class="metric-details">
+                        <p>Total Registered Workers</p>
+                        <h3 id="statTotalWorkers">0</h3>
+                    </div>
+                    <div class="metric-icon">
+                        <i data-lucide="users"></i>
+                    </div>
+                </div>
+                <div class="metric-card cyan">
+                    <div class="metric-details">
+                        <p>Active Clocked-In</p>
+                        <h3 id="statActiveWorkers">0</h3>
+                    </div>
+                    <div class="metric-icon">
+                        <i data-lucide="user-check"></i>
+                    </div>
+                </div>
+                <div class="metric-card green">
+                    <div class="metric-details">
+                        <p>Active Work Sites</p>
+                        <h3 id="statTotalSites">0</h3>
+                    </div>
+                    <div class="metric-icon">
+                        <i data-lucide="building-2"></i>
+                    </div>
+                </div>
+                <div class="metric-card amber">
+                    <div class="metric-details">
+                        <p>Redis Status</p>
+                        <h3 id="statRedisHealth">Active</h3>
+                    </div>
+                    <div class="metric-icon">
+                        <i data-lucide="cpu"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-row">
+                <!-- Recent Logs in Dashboard -->
+                <div class="content-panel">
+                    <div class="panel-header">
+                        <h3><i data-lucide="history"></i> Recent Activity Logs</h3>
+                        <a onclick="switchTab('logs')" style="color:var(--primary); font-size:13px; font-weight:600; cursor:pointer;">View All</a>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Worker</th>
+                                    <th>Site</th>
+                                    <th>Clock In</th>
+                                    <th>Clock Out</th>
+                                    <th>Hours</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dashboardLogsTable">
+                                <tr>
+                                    <td colspan="6" style="text-align: center; color: var(--text-muted);">Loading logs...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Live Active Workers Sidebar -->
+                <div class="content-panel">
+                    <div class="panel-header">
+                        <h3><i data-lucide="activity"></i> Currently Clocked In</h3>
+                    </div>
+                    <p style="font-size:12px; color: var(--text-muted); margin-bottom: 16px; margin-top: -12px;">Real-time from Redis Cache</p>
+                    <div id="dashboardActiveList">
+                        <div style="text-align: center; color: var(--text-dark); padding: 20px;">No workers currently clocked in.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ==================== WORKERS PAGE ==================== -->
+        <section id="workers" class="page">
+            <header>
+                <div class="header-title">
+                    <h2>Workers Directory</h2>
+                    <p>Register, edit, and track registered service workers and wage configurations.</p>
+                </div>
+                <div>
+                    <button class="btn" onclick="openModal('addWorkerModal')">
+                        <i data-lucide="user-plus"></i>
+                        Register New Worker
+                    </button>
+                </div>
+            </header>
+
+            <div class="content-panel">
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Phone Number</th>
+                                <th>Designation</th>
+                                <th>Daily Wage Rate</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="workersTableBody">
+                            <tr>
+                                <td colspan="7" style="text-align: center; color: var(--text-muted);">Loading workers...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ==================== SITES PAGE ==================== -->
+        <section id="sites" class="page">
+            <header>
+                <div class="header-title">
+                    <h2>Active Construction Sites</h2>
+                    <p>Manage physical work site sites and worker distributions.</p>
+                </div>
+                <div>
+                    <button class="btn btn-secondary" onclick="openModal('addSiteModal')">
+                        <i data-lucide="plus-circle"></i>
+                        Deploy New Site
+                    </button>
+                </div>
+            </header>
+
+            <div class="content-panel">
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Site Name</th>
+                                <th>Geographic Location</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sitesTableBody">
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: var(--text-muted);">Loading sites...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ==================== ATTENDANCE DESK PAGE ==================== -->
+        <section id="attendance-desk" class="page">
+            <header>
+                <div class="header-title">
+                    <h2>Clock In & Out Desk</h2>
+                    <p>Simulate terminal events for worker check-ins and check-outs.</p>
+                </div>
+            </header>
+
+            <div class="dashboard-row">
+                <!-- Clock In Form -->
+                <div class="content-panel">
+                    <div class="panel-header">
+                        <h3><i data-lucide="log-in" style="color:var(--accent-green)"></i> Worker Clock-In Terminal</h3>
+                    </div>
+                    <form id="clockInForm" onsubmit="handleClockIn(event)">
+                        <div class="form-group">
+                            <label for="clockInWorkerSelect">Select Worker</label>
+                            <select id="clockInWorkerSelect" class="form-control" required>
+                                <option value="">-- Choose Worker --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="clockInSiteSelect">Select Work Site</label>
+                            <select id="clockInSiteSelect" class="form-control" required>
+                                <option value="">-- Choose Site --</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn" style="background-color: var(--accent-green); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+                            <i data-lucide="log-in"></i> Register Arrival (Clock In)
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Clock Out Form -->
+                <div class="content-panel">
+                    <div class="panel-header">
+                        <h3><i data-lucide="log-out" style="color:var(--accent-red)"></i> Worker Clock-Out Terminal</h3>
+                    </div>
+                    <form id="clockOutForm" onsubmit="handleClockOut(event)">
+                        <div class="form-group">
+                            <label for="clockOutWorkerSelect">Select Clocked-In Worker</label>
+                            <select id="clockOutWorkerSelect" class="form-control" required>
+                                <option value="">-- Choose Worker to Clock Out --</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn" style="background-color: var(--accent-red); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);">
+                            <i data-lucide="log-out"></i> Register Departure (Clock Out)
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ==================== OVERTIME & PAYROLL PAGE ==================== -->
+        <section id="overtime-payroll" class="page">
+            <header>
+                <div class="header-title">
+                    <h2>Overtime Settlement Desk</h2>
+                    <p>Calculate accumulated overtime payments and disburse monthly settlements.</p>
+                </div>
+            </header>
+
+            <div class="content-panel">
+                <div class="payroll-selector-bar">
+                    <div class="form-group" style="margin-bottom:0; flex:1;">
+                        <label for="payrollWorkerSelect">Select Worker</label>
+                        <select id="payrollWorkerSelect" class="form-control" onchange="loadPayrollSummary()">
+                            <option value="">-- Choose Worker --</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0; width: 220px;">
+                        <label for="payrollMonthInput">Payroll Month</label>
+                        <input type="month" id="payrollMonthInput" class="form-control" value="2026-05" onchange="loadPayrollSummary()">
+                    </div>
+                    <button class="btn btn-outline" onclick="loadPayrollSummary()">
+                        <i data-lucide="rotate-cw"></i> Fetch Report
+                    </button>
+                </div>
+
+                <div id="payrollSummaryContainer" style="display:none;">
+                    <div class="payroll-grid">
+                        <div class="payroll-card">
+                            <h4><i data-lucide="clock"></i> Regular Hours Worked</h4>
+                            <div class="payroll-stat" id="payrollRegularHours">0.0h</div>
+                        </div>
+                        <div class="payroll-card">
+                            <h4><i data-lucide="timer"></i> Overtime Hours</h4>
+                            <div class="payroll-stat" id="payrollOvertimeHours" style="color:var(--accent-purple)">0.0h</div>
+                        </div>
+                        <div class="payroll-card">
+                            <h4><i data-lucide="dollar-sign"></i> Hourly Overtime Rate</h4>
+                            <div class="payroll-stat" id="payrollHourlyRate" style="color:var(--accent-cyan)">₹ 0.00</div>
+                        </div>
+                        <div class="payroll-card">
+                            <h4><i data-lucide="coins"></i> Total Overtime Payout</h4>
+                            <div class="payroll-stat" id="payrollTotalPayout" style="color:var(--accent-green)">₹ 0.00</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:24px; padding: 18px; border-radius: var(--radius-md); background-color: rgba(255, 255, 255, 0.015); border: 1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <span class="badge" id="payrollStatusBadge">Status: Unsettled</span>
+                            <p style="font-size:12px; color:var(--text-muted); margin-top:6px;">Current month settlement is blocked until completion of the calendar period.</p>
+                        </div>
+                        <button class="btn btn-secondary" id="settleButton" onclick="triggerSettlement()">
+                            <i data-lucide="check-circle-2"></i> Finalize & Settle Overtime
+                        </button>
+                    </div>
+
+                    <!-- Breakdown table -->
+                    <div style="margin-top:32px;">
+                        <h4 style="font-size:15px; font-weight:600; margin-bottom:16px; display:flex; align-items:center; gap:8px;">
+                            <i data-lucide="calendar-days" style="color:var(--primary)"></i> Overtime Ledger Breakdown
+                        </h4>
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Regular Hours</th>
+                                        <th>Overtime Hours</th>
+                                        <th>Daily Payout Amount</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="payrollBreakdownTableBody">
+                                    <!-- Dynamic -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="payrollPlaceholder" style="text-align:center; padding:60px 20px; color:var(--text-muted);">
+                    <i data-lucide="banknote" style="font-size:48px; color:var(--text-dark); margin-bottom:12px;"></i>
+                    <p>Select a registered worker and calendar month above to load the settlement statement.</p>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ==================== LOGS PAGE ==================== -->
+        <section id="logs" class="page">
+            <header>
+                <div class="header-title">
+                    <h2>System Attendance Ledger</h2>
+                    <p>Comprehensive historical logs of check-ins, check-outs, and precise time calculations.</p>
+                </div>
+            </header>
+
+            <div class="content-panel">
+                <!-- Filters -->
+                <div class="filter-bar">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label for="filterWorker">Worker</label>
+                        <select id="filterWorker" class="form-control">
+                            <option value="">-- All Workers --</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label for="filterFrom">From Date</label>
+                        <input type="date" id="filterFrom" class="form-control">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label for="filterTo">To Date</label>
+                        <input type="date" id="filterTo" class="form-control">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label for="pageSize">Page Size</label>
+                        <select id="pageSize" class="form-control">
+                            <option value="10">10 entries</option>
+                            <option value="20" selected>20 entries</option>
+                            <option value="50">50 entries</option>
+                            <option value="100">100 entries</option>
+                        </select>
+                    </div>
+                    <div>
+                        <button class="btn btn-outline" style="width:100%;" onclick="fetchLogs(0)">
+                            <i data-lucide="filter"></i> Apply Filters
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Log ID</th>
+                                <th>Worker</th>
+                                <th>Construction Site</th>
+                                <th>Clock In</th>
+                                <th>Clock Out</th>
+                                <th>Regular Hours</th>
+                                <th>Overtime Hours</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logsTableBody">
+                            <tr>
+                                <td colspan="8" style="text-align: center; color: var(--text-muted);">Loading system logs...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination-container">
+                    <div style="font-size:13px; color:var(--text-muted);" id="paginationSummary">
+                        Showing 0 to 0 of 0 entries
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn btn-outline" id="btnPrevPage" disabled onclick="changePage(-1)">
+                            <i data-lucide="chevron-left"></i> Previous
+                        </button>
+                        <button class="btn btn-outline" id="btnNextPage" disabled onclick="changePage(1)">
+                            Next <i data-lucide="chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL: ADD WORKER -->
+    <div class="modal-overlay" id="addWorkerModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Register New Worker Profile</h3>
+                <button class="modal-close" onclick="closeModal('addWorkerModal')">&times;</button>
+            </div>
+            <form id="addWorkerForm" onsubmit="saveWorker(event)">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="workerName">Full Name</label>
+                        <input type="text" id="workerName" class="form-control" placeholder="e.g. Ravi Kumar" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="workerPhone">Phone Number (SMS Channel)</label>
+                        <input type="tel" id="workerPhone" class="form-control" placeholder="e.g. 9876543210" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="workerDesignation">Role/Designation</label>
+                        <select id="workerDesignation" class="form-control" required>
+                            <option value="MASON">MASON</option>
+                            <option value="CARPENTER">CARPENTER</option>
+                            <option value="ELECTRICIAN">ELECTRICIAN</option>
+                            <option value="PLUMBER">PLUMBER</option>
+                            <option value="LABOURER">LABOURER</option>
+                            <option value="SUPERVISOR">SUPERVISOR</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="workerWage">Daily Wage Rate (₹ / Day)</label>
+                        <input type="number" id="workerWage" class="form-control" placeholder="e.g. 800" min="100" max="10000" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('addWorkerModal')">Cancel</button>
+                    <button type="submit" class="btn">Save Profile</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD SITE -->
+    <div class="modal-overlay" id="addSiteModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Deploy New Construction Site</h3>
+                <button class="modal-close" onclick="closeModal('addSiteModal')">&times;</button>
+            </div>
+            <form id="addSiteForm" onsubmit="saveSite(event)">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="siteName">Site Name</label>
+                        <input type="text" id="siteName" class="form-control" placeholder="e.g. Greenfield Phase 1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="siteLocation">Location / Address</label>
+                        <input type="text" id="siteLocation" class="form-control" placeholder="e.g. Whitefield Bengaluru" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('addSiteModal')">Cancel</button>
+                    <button type="submit" class="btn">Deploy Site</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- TOAST CONTAINER -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- SCRIPT LOGIC -->
+    <script>
+        // In-memory application state
+        let workers = [];
+        let sites = [];
+        let clockedInWorkers = [];
+        let logsCurrentPage = 0;
+        let logsTotalPages = 0;
+
+        // API Endpoint mapping
+        const API = {
+            workers: '/api/workers',
+            sites: '/api/sites',
+            active: '/api/attendance/active',
+            clockIn: '/api/attendance/clock-in',
+            clockOut: '/api/attendance/clock-out',
+            logs: '/api/attendance/log',
+            overtime: '/api/overtime/summary',
+            settle: '/api/overtime/settle'
+        };
+
+        // Initialize Lucide icons and load initial data
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            
+            // Set default dates in filter bar
+            const today = new Date();
+            const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            document.getElementById('filterFrom').value = startOfMonth.toISOString().split('T')[0];
+            document.getElementById('filterTo').value = today.toISOString().split('T')[0];
+
+            // Initial load
+            loadAllData();
+            
+            // Poll for currently clocked in workers every 10 seconds
+            setInterval(fetchActiveClockedIn, 10000);
+        });
+
+        // Tab Switching
+        function switchTab(tabId) {
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            // Show target page
+            document.getElementById(tabId).classList.add('active');
+
+            // Deactivate all nav items
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            // Find the item with onclick attribute containing tabId
+            const activeItem = Array.from(document.querySelectorAll('.nav-item'))
+                .find(item => item.getAttribute('onclick').includes(tabId));
+            if (activeItem) activeItem.classList.add('active');
+
+            // Trigger tab specific loads
+            if (tabId === 'dashboard') {
+                loadDashboardStats();
+            } else if (tabId === 'workers') {
+                fetchWorkers();
+            } else if (tabId === 'sites') {
+                fetchSites();
+            } else if (tabId === 'attendance-desk') {
+                populateDeskSelects();
+            } else if (tabId === 'logs') {
+                fetchLogs(0);
+            }
+        }
+
+        // Modals
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('open');
+        }
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('open');
+        }
+
+        // Toast notifications
+        function showToast(title, message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            let icon = 'info';
+            if (type === 'success') icon = 'check-circle';
+            else if (type === 'error') icon = 'alert-triangle';
+            else if (type === 'warning') icon = 'alert-circle';
+
+            toast.innerHTML = `
+                <i data-lucide="${icon}" style="flex-shrink:0;"></i>
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+                <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
+            `;
+            
+            container.appendChild(toast);
+            lucide.createIcons({ attrs: { class: 'lucide' }, nameAttr: 'data-lucide', node: toast });
+
+            // Remove toast after 6 seconds
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(10px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 6000);
+        }
+
+        // Data fetching core
+        async function loadAllData() {
+            try {
+                await Promise.all([
+                    fetchWorkers(),
+                    fetchSites(),
+                    fetchActiveClockedIn(),
+                    fetchDashboardLogs()
+                ]);
+                loadDashboardStats();
+                updateSystemStatus(true, "Successfully fetched and loaded master ledger and caches.");
+            } catch (err) {
+                console.error("Initialization error:", err);
+                updateSystemStatus(false, "Connection error: Failed to reach backend REST endpoints.");
+                showToast("System Connection Error", "Unable to pull live data from the server. Check if Spring Boot is running.", "error");
+            }
+        }
+
+        function updateSystemStatus(online, message) {
+            const dot = document.getElementById('redisStatusDot');
+            const desc = document.getElementById('systemStatusDesc');
+            if (online) {
+                dot.className = "status-dot online";
+                desc.textContent = message;
+            } else {
+                dot.className = "status-dot offline";
+                desc.textContent = message;
+            }
+        }
+
+        async function fetchWorkers() {
+            const res = await fetch(API.workers);
+            if (!res.ok) throw new Error("Workers fetch failed");
+            workers = await res.json();
+            renderWorkersTable();
+            populateMasterSelects();
+        }
+
+        async function fetchSites() {
+            const res = await fetch(API.sites);
+            if (!res.ok) throw new Error("Sites fetch failed");
+            sites = await res.json();
+            renderSitesTable();
+            populateMasterSelects();
+        }
+
+        async function fetchActiveClockedIn() {
+            try {
+                const res = await fetch(API.active);
+                if (!res.ok) throw new Error("Active workers fetch failed");
+                clockedInWorkers = await res.json();
+                renderActiveWorkersList();
+                document.getElementById('statActiveWorkers').textContent = clockedInWorkers.length;
+                document.getElementById('statRedisHealth').textContent = "Active";
+                document.getElementById('statRedisHealth').className = "";
+            } catch (e) {
+                console.warn("Redis connectivity fallback triggered: ", e);
+                document.getElementById('statRedisHealth').textContent = "Degraded";
+                document.getElementById('statRedisHealth').className = "text-mono badge badge-warning";
+                updateSystemStatus(true, "Redis Cache degraded: Falling back seamlessly to Supabase direct log scans.");
+            }
+        }
+
+        async function fetchDashboardLogs() {
+            try {
+                const res = await fetch(`${API.logs}?page=0&size=5`);
+                if (res.ok) {
+                    const data = await res.json();
+                    renderDashboardLogs(data.content);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Stats calculation
+        function loadDashboardStats() {
+            document.getElementById('statTotalWorkers').textContent = workers.length;
+            document.getElementById('statTotalSites').textContent = sites.length;
+        }
+
+        // Master Select Populate (for filters & forms)
+        function populateMasterSelects() {
+            // Worker filters
+            const filterWorker = document.getElementById('filterWorker');
+            const payrollWorker = document.getElementById('payrollWorkerSelect');
+            
+            if (filterWorker && payrollWorker) {
+                const savedFilterVal = filterWorker.value;
+                const savedPayrollVal = payrollWorker.value;
+
+                filterWorker.innerHTML = '<option value="">-- All Workers --</option>';
+                payrollWorker.innerHTML = '<option value="">-- Choose Worker --</option>';
+
+                workers.forEach(w => {
+                    const opt = `<option value="${w.id}">${w.name} (${w.designation})</option>`;
+                    filterWorker.insertAdjacentHTML('beforeend', opt);
+                    payrollWorker.insertAdjacentHTML('beforeend', opt);
+                });
+
+                filterWorker.value = savedFilterVal;
+                payrollWorker.value = savedPayrollVal;
+            }
+        }
+
+        function populateDeskSelects() {
+            const clockInWorker = document.getElementById('clockInWorkerSelect');
+            const clockInSite = document.getElementById('clockInSiteSelect');
+            const clockOutWorker = document.getElementById('clockOutWorkerSelect');
+
+            clockInWorker.innerHTML = '<option value="">-- Choose Worker --</option>';
+            clockInSite.innerHTML = '<option value="">-- Choose Site --</option>';
+            clockOutWorker.innerHTML = '<option value="">-- Choose Worker to Clock Out --</option>';
+
+            // Fill all active workers for Clock-In
+            workers.filter(w => w.active).forEach(w => {
+                clockInWorker.insertAdjacentHTML('beforeend', `<option value="${w.id}">${w.name} (${w.designation})</option>`);
+            });
+
+            // Fill active sites
+            sites.filter(s => s.active).forEach(s => {
+                clockInSite.insertAdjacentHTML('beforeend', `<option value="${s.id}">${s.siteName}</option>`);
+            });
+
+            // Fill clocked in workers (we can get from active workers list)
+            clockedInWorkers.forEach(aw => {
+                clockOutWorker.insertAdjacentHTML('beforeend', `<option value="${aw.workerId}">${aw.workerName} [Site: ${aw.siteName}]</option>`);
+            });
+        }
+
+        // Renderer Functions
+        function renderWorkersTable() {
+            const tbody = document.getElementById('workersTableBody');
+            tbody.innerHTML = '';
+            
+            if (workers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-dark);">No workers registered.</td></tr>';
+                return;
+            }
+
+            workers.forEach(w => {
+                const statusBadge = w.active 
+                    ? '<span class="badge badge-success">Active</span>' 
+                    : '<span class="badge badge-secondary">Inactive</span>';
+
+                tbody.insertAdjacentHTML('beforeend', `
+                    <tr>
+                        <td class="text-mono">#${w.id}</td>
+                        <td style="font-weight:600;">${w.name}</td>
+                        <td class="text-mono">${w.phone}</td>
+                        <td><span class="badge badge-info">${w.designation}</span></td>
+                        <td class="cost-val">₹ ${w.dailyWageRate.toFixed(2)}</td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            <button class="btn btn-outline" style="padding: 6px 12px; font-size:12px;" onclick="loadWorkerToEdit(${w.id})">
+                                <i data-lucide="edit-3" style="width:14px; height:14px;"></i> Edit
+                            </button>
+                        </td>
+                    </tr>
+                `);
+            });
+            lucide.createIcons({ attrs: { class: 'lucide' }, nameAttr: 'data-lucide', node: tbody });
+        }
+
+        function renderSitesTable() {
+            const tbody = document.getElementById('sitesTableBody');
+            tbody.innerHTML = '';
+
+            if (sites.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-dark);">No sites created yet.</td></tr>';
+                return;
+            }
+
+            sites.forEach(s => {
+                const statusBadge = s.active 
+                    ? '<span class="badge badge-success">Operating</span>' 
+                    : '<span class="badge badge-secondary">Suspended</span>';
+
+                tbody.insertAdjacentHTML('beforeend', `
+                    <tr>
+                        <td class="text-mono">#${s.id}</td>
+                        <td style="font-weight:600;">${s.siteName}</td>
+                        <td>${s.location}</td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            <button class="btn btn-outline" style="padding: 6px 12px; font-size:12px;" onclick="toggleSiteStatus(${s.id}, ${s.active})">
+                                <i data-lucide="power" style="width:14px; height:14px;"></i> Toggle
+                            </button>
+                        </td>
+                    </tr>
+                `);
+            });
+            lucide.createIcons({ attrs: { class: 'lucide' }, nameAttr: 'data-lucide', node: tbody });
+        }
+
+        function renderActiveWorkersList() {
+            const container = document.getElementById('dashboardActiveList');
+            container.innerHTML = '';
+
+            if (clockedInWorkers.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: var(--text-dark); padding: 40px 0;">No active worker check-ins.</div>';
+                return;
+            }
+
+            clockedInWorkers.forEach(aw => {
+                const initials = aw.workerName ? aw.workerName.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase() : 'W';
+                container.insertAdjacentHTML('beforeend', `
+                    <div class="active-worker-item">
+                        <div class="active-worker-info">
+                            <div class="active-worker-avatar">${initials}</div>
+                            <div class="active-worker-meta">
+                                <h4>${aw.workerName}</h4>
+                                <p><i data-lucide="map-pin" style="width:10px; height:10px; display:inline-block; vertical-align:-1px;"></i> ${aw.siteName}</p>
+                            </div>
+                        </div>
+                        <span class="badge badge-success" style="font-family:var(--font-mono); font-size:11px;">
+                            ${aw.clockInTime ? formatClockTime(aw.clockInTime) : 'IN'}
+                        </span>
+                    </div>
+                `);
+            });
+            lucide.createIcons({ attrs: { class: 'lucide' }, nameAttr: 'data-lucide', node: container });
+        }
+
+        function renderDashboardLogs(items) {
+            const tbody = document.getElementById('dashboardLogsTable');
+            tbody.innerHTML = '';
+
+            if (!items || items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-dark);">No activity recorded.</td></tr>';
+                return;
+            }
+
+            items.forEach(log => {
+                const clockOutStr = log.clockOutTime ? formatDateTime(log.clockOutTime) : '<span class="badge badge-success">Clocked In</span>';
+                const hoursStr = log.hoursWorked !== null ? `${log.hoursWorked.toFixed(1)}h` : '--';
+                const statusBadge = log.overtimeHours > 0 
+                    ? `<span class="badge badge-warning">+${log.overtimeHours.toFixed(1)}h OT</span>`
+                    : '<span class="badge badge-secondary">Regular</span>';
+
+                tbody.insertAdjacentHTML('beforeend', `
+                    <tr>
+                        <td style="font-weight:600;">${log.workerName}</td>
+                        <td>${log.siteName}</td>
+                        <td class="text-mono" style="font-size:13px;">${formatDateTime(log.clockInTime)}</td>
+                        <td class="text-mono" style="font-size:13px;">${clockOutStr}</td>
+                        <td class="cost-val">${hoursStr}</td>
+                        <td>${statusBadge}</td>
+                    </tr>
+                `);
+            });
+        }
+
+        function formatDateTime(isoString) {
+            if (!isoString) return '--';
+            const d = new Date(isoString);
+            return d.toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short', hour12: false });
+        }
+
+        function formatClockTime(isoString) {
+            if (!isoString) return '--';
+            const d = new Date(isoString);
+            return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
+        }
+
+        // Register Worker Action
+        async function saveWorker(e) {
+            e.preventDefault();
+            const name = document.getElementById('workerName').value.trim();
+            const phone = document.getElementById('workerPhone').value.trim();
+            const designation = document.getElementById('workerDesignation').value;
+            const wage = parseFloat(document.getElementById('workerWage').value);
+
+            try {
+                const res = await fetch(API.workers, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, phone, designation, dailyWageRate: wage, active: true })
+                });
+
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || "Failed to create worker");
+
+                showToast("Worker Registered", `Successfully created profile for ${name}`, "success");
+                closeModal('addWorkerModal');
+                document.getElementById('addWorkerForm').reset();
+                
+                await fetchWorkers();
+                loadDashboardStats();
+            } catch (err) {
+                showToast("Registration Failed", err.message, "error");
+            }
+        }
+
+        // Register Site Action
+        async function saveSite(e) {
+            e.preventDefault();
+            const siteName = document.getElementById('siteName').value.trim();
+            const location = document.getElementById('siteLocation').value.trim();
+
+            try {
+                const res = await fetch(API.sites, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ siteName, location, active: true })
+                });
+
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || "Failed to create site");
+
+                showToast("Site Deployed", `Successfully created active site: ${siteName}`, "success");
+                closeModal('addSiteModal');
+                document.getElementById('addSiteForm').reset();
+
+                await fetchSites();
+                loadDashboardStats();
+            } catch (err) {
+                showToast("Deployment Failed", err.message, "error");
+            }
+        }
+
+        // Simulate clock in
+        async function handleClockIn(e) {
+            e.preventDefault();
+            const workerId = parseInt(document.getElementById('clockInWorkerSelect').value);
+            const siteId = parseInt(document.getElementById('clockInSiteSelect').value);
+
+            try {
+                const res = await fetch(API.clockIn, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ workerId, siteId })
+                });
+
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || "Clock-in failed");
+
+                showToast("Clock-In Successful", `${data.workerName} checked in at ${data.siteName}. SMS alert dispatched.`, "success");
+                
+                await fetchActiveClockedIn();
+                populateDeskSelects();
+                fetchDashboardLogs();
+            } catch (err) {
+                showToast("Clock-In Error", err.message, "error");
+            }
+        }
+
+        // Simulate clock out
+        async function handleClockOut(e) {
+            e.preventDefault();
+            const workerId = parseInt(document.getElementById('clockOutWorkerSelect').value);
+
+            try {
+                const res = await fetch(API.clockOut, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ workerId })
+                });
+
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || "Clock-out failed");
+
+                showToast("Clock-Out Successful", `${data.workerName} checked out. Hours worked: ${data.hoursWorked.toFixed(1)}h (Overtime: ${data.overtimeHours.toFixed(1)}h). SMS alert dispatched.`, "success");
+
+                await fetchActiveClockedIn();
+                populateDeskSelects();
+                fetchDashboardLogs();
+            } catch (err) {
+                showToast("Clock-Out Error", err.message, "error");
+            }
+        }
+
+        // Overtime & Payroll reporting
+        async function loadPayrollSummary() {
+            const workerId = document.getElementById('payrollWorkerSelect').value;
+            const month = document.getElementById('payrollMonthInput').value;
+
+            if (!workerId || !month) {
+                document.getElementById('payrollPlaceholder').style.display = 'block';
+                document.getElementById('payrollSummaryContainer').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('payrollPlaceholder').style.display = 'none';
+            document.getElementById('payrollSummaryContainer').style.display = 'block';
+
+            try {
+                const res = await fetch(`${API.overtime}/${workerId}?month=${month}`);
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || "Failed to fetch monthly payroll statement");
+
+                // Render metrics
+                document.getElementById('payrollRegularHours').textContent = `${data.totalRegularHours.toFixed(1)}h`;
+                document.getElementById('payrollOvertimeHours').textContent = `${data.totalOvertimeHours.toFixed(1)}h`;
+                document.getElementById('payrollHourlyRate').textContent = `₹ ${data.hourlyOvertimeRate.toFixed(2)}`;
+                document.getElementById('payrollTotalPayout').textContent = `₹ ${data.totalOvertimePayout.toFixed(2)}`;
+
+                // Status banner
+                const statusBadge = document.getElementById('payrollStatusBadge');
+                const settleBtn = document.getElementById('settleButton');
+                if (data.settled) {
+                    statusBadge.className = "badge badge-success";
+                    statusBadge.innerHTML = `<i data-lucide="check-circle-2"></i> Status: Settled`;
+                    settleBtn.disabled = true;
+                } else {
+                    statusBadge.className = "badge badge-warning";
+                    statusBadge.innerHTML = `<i data-lucide="alert-circle"></i> Status: Unsettled`;
+                    settleBtn.disabled = false;
+                }
+
+                // Render detail table
+                const breakdownBody = document.getElementById('payrollBreakdownTableBody');
+                breakdownBody.innerHTML = '';
+                
+                if (!data.dailyBreakdown || data.dailyBreakdown.length === 0) {
+                    breakdownBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No attendance registers for the selected calendar month.</td></tr>';
+                } else {
+                    data.dailyBreakdown.forEach(day => {
+                        const statusColor = day.settled ? 'badge-success' : 'badge-warning';
+                        const statusText = day.settled ? 'Settled' : 'Unsettled';
+                        
+                        breakdownBody.insertAdjacentHTML('beforeend', `
+                            <tr>
+                                <td class="text-mono">${day.date}</td>
+                                <td class="cost-val">${day.regularHours.toFixed(1)}h</td>
+                                <td class="cost-val" style="color:var(--accent-purple); font-weight:600;">${day.overtimeHours.toFixed(1)}h</td>
+                                <td class="cost-val" style="color:var(--accent-green)">₹ ${day.payoutAmount.toFixed(2)}</td>
+                                <td><span class="badge ${statusColor}">${statusText}</span></td>
+                            </tr>
+                        `);
+                    });
+                }
+                lucide.createIcons({ attrs: { class: 'lucide' }, nameAttr: 'data-lucide', node: document.getElementById('payrollSummaryContainer') });
+
+            } catch (err) {
+                showToast("Payroll Error", err.message, "error");
+            }
+        }
+
+        // Trigger Settlement
+        async function triggerSettlement() {
+            const workerId = document.getElementById('payrollWorkerSelect').value;
+            const month = document.getElementById('payrollMonthInput').value;
+
+            if (!workerId || !month) return;
+
+            try {
+                const res = await fetch(`${API.settle}/${workerId}?month=${month}`, {
+                    method: 'POST'
+                });
+                
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || "Overtime settlement failed");
+
+                showToast("Settlement Processed", `Disbursed ₹ ${data.totalSettledAmount.toFixed(2)} for ${month}. SMS payout alert dispatched.`, "success");
+                await loadPayrollSummary();
+                fetchDashboardLogs();
+            } catch (err) {
+                // If it fails (like trying to settle current month), show the error beautifully in a red toast!
+                showToast("Settlement Blocked", err.message, "error");
+            }
+        }
+
+        // Logs Page Pagination & Filtering
+        let logsFilters = {
+            workerId: '',
+            from: '',
+            to: '',
+            pageSize: 20
+        };
+
+        async function fetchLogs(page) {
+            logsCurrentPage = page;
+            const workerId = document.getElementById('filterWorker').value;
+            const from = document.getElementById('filterFrom').value;
+            const to = document.getElementById('filterTo').value;
+            const size = document.getElementById('pageSize').value;
+
+            logsFilters = { workerId, from, to, pageSize: size };
+
+            let url = `${API.logs}?page=${page}&size=${size}`;
+            if (workerId) url += `&workerId=${workerId}`;
+            if (from) url += `&from=${from}`;
+            if (to) url += `&to=${to}`;
+
+            try {
+                const res = await fetch(url);
+                if (!res.ok) throw new Error("Failed to load historical ledger logs");
+                const data = await res.json();
+
+                renderLogsTable(data.content);
+                updatePaginationControls(data);
+            } catch (err) {
+                showToast("Ledger Error", err.message, "error");
+            }
+        }
+
+        function renderLogsTable(content) {
+            const tbody = document.getElementById('logsTableBody');
+            tbody.innerHTML = '';
+
+            if (!content || content.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text-dark);">No log entries match the filters.</td></tr>';
+                return;
+            }
+
+            content.forEach(log => {
+                const clockOutStr = log.clockOutTime ? formatDateTime(log.clockOutTime) : '<span class="badge badge-success">Clocked In</span>';
+                const regHours = log.hoursWorked !== null ? (log.hoursWorked - log.overtimeHours).toFixed(1) : '--';
+                const otHours = log.overtimeHours !== null ? log.overtimeHours.toFixed(1) : '--';
+                
+                let statusBadge = '<span class="badge badge-info">Active Check-in</span>';
+                if (log.clockOutTime) {
+                    statusBadge = log.overtimeHours > 0 
+                        ? '<span class="badge badge-warning">Overtime Logged</span>'
+                        : '<span class="badge badge-secondary">Completed</span>';
+                }
+
+                tbody.insertAdjacentHTML('beforeend', `
+                    <tr>
+                        <td class="text-mono">#${log.id}</td>
+                        <td style="font-weight:600;">${log.workerName}</td>
+                        <td>${log.siteName}</td>
+                        <td class="text-mono">${formatDateTime(log.clockInTime)}</td>
+                        <td class="text-mono">${clockOutStr}</td>
+                        <td class="cost-val">${regHours}h</td>
+                        <td class="cost-val" style="color:var(--accent-purple)">${otHours}h</td>
+                        <td>${statusBadge}</td>
+                    </tr>
+                `);
+            });
+        }
+
+        function updatePaginationControls(data) {
+            logsTotalPages = data.totalPages;
+            
+            const startEntry = data.totalElements === 0 ? 0 : (data.number * data.size) + 1;
+            const endEntry = Math.min((data.number + 1) * data.size, data.totalElements);
+            
+            document.getElementById('paginationSummary').textContent = 
+                `Showing ${startEntry} to ${endEntry} of ${data.totalElements} entries`;
+
+            const btnPrev = document.getElementById('btnPrevPage');
+            const btnNext = document.getElementById('btnNextPage');
+
+            btnPrev.disabled = data.first;
+            btnNext.disabled = data.last || data.totalPages <= 1;
+        }
+
+        function changePage(direction) {
+            const targetPage = logsCurrentPage + direction;
+            if (targetPage >= 0 && targetPage < logsTotalPages) {
+                fetchLogs(targetPage);
+            }
+        }
+    </script>
+</body>
+</html>
